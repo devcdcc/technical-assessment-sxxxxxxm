@@ -23,6 +23,7 @@ private case class CartServiceLive(productAdapter: ProductAdapter, repository: C
 
   override def getCartSummary(sessionId: String): IO[CartError, CartSummary] = for {
     cart <- getCart(sessionId)
+    _    <- ZIO.fail(CartError.EmptyCartError).when(cart.cartItems.isEmpty)
     subTotal = cart.cartItems.map(item => item.price.toDouble * item.quantity).sum
     tax      = subTotal * CartService.TAX
     total    = subTotal + tax

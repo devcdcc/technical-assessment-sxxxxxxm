@@ -58,5 +58,5 @@ object CartRepositorySpec extends ZIOSpecDefault {
         } yield assertTrue(firstSave == firstExpected && lastSave == lastExpected)
       }
     )
-  )
+  ).provide(CartRepository.live)
 }

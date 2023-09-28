@@ -9,7 +9,7 @@ lazy val root = (project in file(".")).settings(
     "dev.zio" %% "zio-streams"  % "2.0.18",
     // zio testing library
     "dev.zio" %% "zio-test"     % "2.0.18",
-    "dev.zio" %% "zio-test-sbt" % "2.0.13",
+    "dev.zio" %% "zio-test-sbt" % "2.0.18",
     // zio json compatibility
     "dev.zio" %% "zio-json"     % "0.6.2",
     // zio prelude (datatype helpers)

@@ -1,6 +1,8 @@
 package com.siriusxm
 package cart.domain
 
+import zio.json._
+
 opaque type Price = Double
 
 object Price:
@@ -12,6 +14,8 @@ extension (price: Price) {
 }
 
 case class CartProduct(title: String, price: Double)
+
+implicit val decoder: JsonDecoder[CartProduct] = DeriveJsonDecoder.gen[CartProduct]
 
 case class CartItem(title: String, price: Price, quantity: Int)
 case class Cart(sessionId: String, cartItems: List[CartItem])
