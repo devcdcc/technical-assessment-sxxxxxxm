@@ -1,32 +1,46 @@
 package com.siriusxm
 package cart.services
 
-import com.siriusxm.cart.domain.*
-import com.siriusxm.cart.errors.*
-
+import cart.adapters.ProductAdapter
+import cart.domain.*
+import cart.errors.*
+import cart.repositories.CartRepository
 import zio.*
 
 trait CartService:
   def getCart(sessionId: String): UIO[Cart]
-  def addProduct(quantity: Int, sessionId: String): IO[CartError, Unit]
+  def addProduct(sessionId: String, quantity: Int, productId: String): IO[CartError, Unit]
   def getCartSummary(sessionId: String): IO[CartError, CartSummary]
 end CartService
 
+private case class CartServiceLive(productAdapter: ProductAdapter, repository: CartRepository) extends CartService:
+  override def getCart(sessionId: String): UIO[Cart] = repository.getOrCreateCart(sessionId)
+
+  override def addProduct(sessionId: String, quantity: Int, productId: String): IO[CartError, Unit] = for {
+    productInfo <- productAdapter.getProductById(productId)
+    _ <- repository.addOrIncrementProductQuantity(sessionId, productInfo.title, Price(productInfo.price), quantity)
+  } yield ()
+
+  override def getCartSummary(sessionId: String): IO[CartError, CartSummary] = for {
+    cart <- getCart(sessionId)
+    subTotal = cart.cartItems.map(item => item.price.toDouble * item.quantity).sum
+    tax      = subTotal * CartService.TAX
+    total    = subTotal + tax
+  } yield CartSummary(cart.sessionId, cart.cartItems, Price(subTotal), Price(tax), Price(total))
+end CartServiceLive
+
 object CartService:
+
+  private[services] val TAX = 12.5 / 100
 
   def getCart(sessionId: String): RIO[CartService, Cart] = ZIO.serviceWithZIO[CartService](_.getCart(sessionId))
 
-  def addProduct(quantity: Int, productId: String): ZIO[CartService, CartError, Unit] =
-    ZIO.serviceWithZIO[CartService](_.addProduct(quantity, productId))
+  def addProduct(sessionId: String, quantity: Int, productId: String): ZIO[CartService, CartError, Unit] =
+    ZIO.serviceWithZIO[CartService](_.addProduct(sessionId, quantity, productId))
 
   def getCartSummary(sessionId: String): ZIO[CartService, CartError, CartSummary] =
     ZIO.serviceWithZIO[CartService](_.getCartSummary(sessionId))
 
-  private case class CartServiceImpl() extends CartService:
-    override def getCart(sessionId: String): UIO[Cart]                             = ???
-    override def addProduct(quantity: Int, productId: String): IO[CartError, Unit] = ???
-    override def getCartSummary(sessionId: String): IO[CartError, CartSummary]     = ???
-  end CartServiceImpl
-
-  val live: ZLayer[Any, Nothing, CartService] = ZLayer.fromFunction(() => CartServiceImpl())
+  val live: ZLayer[ProductAdapter & CartRepository, Nothing, CartService] =
+    ZLayer.fromFunction(CartServiceLive(_, _))
 end CartService

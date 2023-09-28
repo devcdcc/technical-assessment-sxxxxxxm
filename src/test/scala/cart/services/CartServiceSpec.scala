@@ -6,9 +6,9 @@ import cart.domain.*
 import zio.*
 import zio.test.*
 import TestAspect.*
-import com.siriusxm.cart.adapters.ProductAdapter
-import com.siriusxm.cart.errors.CartError
-import com.siriusxm.cart.repositories.CartRepository
+import cart.adapters.ProductAdapter
+import cart.errors.CartError
+import cart.repositories.CartRepository
 
 object CartServiceSpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment with Scope, Any] = suite("CartService")(
@@ -31,8 +31,8 @@ object CartServiceSpec extends ZIOSpecDefault {
           cartItems = List(CartItem("Corn Flakes", Price(2.52), 2), CartItem("Cheerios", Price(8.43), 1))
         )
         for {
-          _      <- CartService.addProduct(2, "cornflakes")
-          _      <- CartService.addProduct(1, "cheerios")
+          _      <- CartService.addProduct(sessionId, 2, "cornflakes")
+          _      <- CartService.addProduct(sessionId, 1, "cheerios")
           // when
           result <- CartService.getCart(sessionId)
           // then
@@ -49,7 +49,7 @@ object CartServiceSpec extends ZIOSpecDefault {
         )
         for {
           // when
-          _      <- CartService.addProduct(2, "cornflakes")
+          _      <- CartService.addProduct(sessionId, 2, "cornflakes")
           // then
           result <- CartService.getCart(sessionId)
         } yield assertTrue(result == expected)
@@ -62,9 +62,9 @@ object CartServiceSpec extends ZIOSpecDefault {
           cartItems = List(CartItem("Corn Flakes", Price(2.52), 5))
         )
         for {
-          _      <- CartService.addProduct(2, "cornflakes")
+          _      <- CartService.addProduct(sessionId, 2, "cornflakes")
           // when
-          _      <- CartService.addProduct(3, "cornflakes")
+          _      <- CartService.addProduct(sessionId, 3, "cornflakes")
           result <- CartService.getCart(sessionId)
           // then
         } yield assertTrue(result == expected)
@@ -75,7 +75,7 @@ object CartServiceSpec extends ZIOSpecDefault {
         val expected  = Left(CartError.ElementDoesNotExistsError)
         for {
           // when
-          result <- CartService.addProduct(2, "cornflakes-404").either
+          result <- CartService.addProduct(sessionId, 2, "cornflakes-404").either
           // then
         } yield assertTrue(result == expected)
       }
@@ -102,9 +102,9 @@ object CartServiceSpec extends ZIOSpecDefault {
           Price(16.90)
         )
         for {
-          _      <- CartService.addProduct(2, "cornflakes")
+          _      <- CartService.addProduct(sessionId, 2, "cornflakes")
           // when
-          _      <- CartService.addProduct(1, "weetabix")
+          _      <- CartService.addProduct(sessionId, 1, "weetabix")
           result <- CartService.getCartSummary(sessionId)
           // then
         } yield assertTrue(result == expected)
